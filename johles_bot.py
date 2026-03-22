@@ -258,13 +258,22 @@ def fmt_week_view(events):
             else:
                 ts = "exact time not yet released"
 
-            # What currency/pairs are affected
-            pairs = get_pairs_for_event(e)
-            pairs_str = "  ".join(pairs) if pairs else currency
+            # Currency label in plain English
+            currency_labels = {
+                "USD": "USD News — affects all pairs",
+                "EUR": "EUR News — affects EURUSD",
+                "GBP": "GBP News — affects GBPUSD",
+                "JPY": "JPY News — affects USDJPY",
+                "AUD": "AUD News — affects AUDUSD",
+                "CAD": "CAD News — affects USDCAD",
+                "NZD": "NZD News — affects NZDUSD",
+                "CHF": "CHF News — affects USDCHF",
+            }
+            currency_label = currency_labels.get(currency, f"{currency} News")
 
             msg += f"\n  \U0001f534 <b>{title}</b>\n"
             msg += f"  \U0001f552 {ts}\n"
-            msg += f"  \U0001f4b1 Affects: <code>{pairs_str}</code>\n"
+            msg += f"  \U0001f4b1 {currency_label}\n"
             msg += f"  Expected: <code>{forecast}</code>   Last time: <code>{prev}</code>\n"
         msg += "\n"
 
