@@ -150,9 +150,9 @@ def get_pairs_for_event(event: dict) -> list:
 
 
 def impact_bar(impact: str) -> str:
-    """Visual impact bar."""
-    bars = {"High": "🔴🔴🔴🔴🔴", "Medium": "🟡🟡🟡░░", "Low": "🟢🟢░░░"}
-    return bars.get(impact, "░░░░░")
+    """Visual impact indicator — compact premium style."""
+    bars = {"High": "▰▰▰ HIGH", "Medium": "▰▰░ MED", "Low": "▰░░ LOW"}
+    return bars.get(impact, "░░░")
 
 
 # ══════════════════════════════════════════════════════════════════════════════
@@ -160,118 +160,365 @@ def impact_bar(impact: str) -> str:
 # ══════════════════════════════════════════════════════════════════════════════
 
 def fmt_session_briefing(session_name: str, events: list) -> str:
-    """Format a session opening briefing."""
+    """Format a session opening briefing — compact premium style."""
     now_utc = datetime.utcnow()
     session = SESSIONS[session_name]
-    pairs_str = " · ".join(session["pairs"])
-
-    header = (
-        f"📊 <b>JOHLES CAPITAL · SESSION BRIEFING</b>\n"
-        f"{'─' * 32}\n"
-        f"<b>{session_name} SESSION OPEN</b>\n"
-        f"{now_utc.strftime('%A %d %B %Y · %H:%M UTC')}\n"
-        f"<i>Key pairs: {pairs_str}</i>\n"
-        f"{'─' * 32}\n\n"
-    )
+    pairs_str = "  ".join(session["pairs"])
+    session_icons = {"ASIAN": "🌏", "LONDON": "🏛", "NEW YORK": "🗽"}
+    icon = session_icons.get(session_name, "📡")
 
     if not events:
-        body = "✅ <b>No high-impact events this session.</b>\nClear conditions. Trade your setup.\n"
+        return (
+            f"{icon} <b>{session_name}</b>  <code>{now_utc.strftime('%H:%M')} UTC</code>\n"
+            f"<code>{pairs_str}</code>\n"
+            f"✅  Clear — no high-impact events"
+        )
     else:
-        body = f"⚡ <b>{len(events)} HIGH-IMPACT EVENT(S) THIS SESSION</b>\n\n"
+        lines = f"{icon} <b>{session_name}</b>  <code>{now_utc.strftime('%H:%M')} UTC</code>\n"
+        lines += f"<code>{pairs_str}</code>\n"
+        lines += f"🔴  <b>{len(events)} high-impact event{'s' if len(events)>1 else ''} ahead</b>\n\n"
         for e in events:
             event_time = parse_event_time(e)
-            time_str = event_time.strftime("%H:%M UTC") if event_time else "TBC"
-            pairs = " · ".join(get_pairs_for_event(e))
-            prev = e.get("previous", "—") or "—"
+            time_str = event_time.strftime("%H:%M") if event_time else "TBC"
             forecast = e.get("forecast", "—") or "—"
-            body += (
-                f"🕐 <b>{time_str}</b>  {e.get('country','').upper()} — <b>{e.get('title','')}</b>\n"
-                f"   Pairs: <code>{pairs}</code>\n"
-                f"   Forecast: <b>{forecast}</b>  |  Previous: {prev}\n"
-                f"   Impact: {impact_bar(e.get('impact',''))}\n\n"
+            prev = e.get("previous", "—") or "—"
+            lines += (
+                f"<b>▌{e.get('country','').upper()}  {time_str}</b>  {e.get('title','')}\n"
+                f"  F <code>{forecast}</code>  P <code>{prev}</code>\n"
             )
-
-    footer = (
-        f"{'─' * 32}\n"
-        f"<i>JOHLES Capital Intelligence · Alerts active</i>"
-    )
-    return header + body + footer
+        return lines.rstrip()
 
 
 def fmt_warning(event: dict, minutes: int) -> str:
-    """Format a pre-event warning."""
+    """Format a pre-event warning — compact premium style."""
     event_time = parse_event_time(event)
-    time_str = event_time.strftime("%H:%M UTC") if event_time else "TBC"
-    pairs = " · ".join(get_pairs_for_event(event))
+    time_str = event_time.strftime("%H:%M") if event_time else "TBC"
+    pairs = "  ".join(get_pairs_for_event(event))
     prev = event.get("previous", "—") or "—"
     forecast = event.get("forecast", "—") or "—"
     currency = event.get("country", "").upper()
     title = event.get("title", "")
 
     if minutes == 30:
-        urgency = "⚠️"
-        action = "Review open positions. Decide if you want news exposure or not."
-        color = "🟡"
+        icon = "⚠️"
+        note = "Review positions."
     else:
-        urgency = "🚨"
-        action = "Final warning. Close positions now if avoiding news, or prepare your entry."
-        color = "🔴"
+        icon = "🚨"
+        note = "Final warning."
 
     return (
-        f"{urgency} <b>JOHLES CAPITAL · {minutes}MIN WARNING</b>\n"
-        f"{'─' * 32}\n"
-        f"{color} <b>{currency} — {title}</b>\n"
-        f"🕐 <b>{time_str}</b>  ({minutes} minutes away)\n\n"
-        f"📌 Pairs affected: <code>{pairs}</code>\n"
-        f"📊 Forecast: <b>{forecast}</b>\n"
-        f"📈 Previous: {prev}\n"
-        f"💥 Impact: {impact_bar(event.get('impact',''))}\n\n"
-        f"{'─' * 32}\n"
-        f"⚡ <b>ACTION:</b> {action}\n"
-        f"{'─' * 32}\n"
-        f"<i>JOHLES Capital Intelligence</i>"
+        f"{icon} <b>{minutes}MIN  ▌{currency}  {time_str} UTC</b>\n"
+        f"<b>{title}</b>\n"
+        f"<code>{pairs}</code>\n"
+        f"F <code>{forecast}</code>  P <code>{prev}</code>\n"
+        f"<i>{note}</i>"
     )
 
 
 def fmt_result(event: dict) -> str:
-    """Format a post-event result."""
+    """Format a post-event result — compact premium style."""
     event_time = parse_event_time(event)
-    time_str = event_time.strftime("%H:%M UTC") if event_time else "TBC"
-    pairs = " · ".join(get_pairs_for_event(event))
+    time_str = event_time.strftime("%H:%M") if event_time else "TBC"
+    pairs = "  ".join(get_pairs_for_event(event))
     prev     = event.get("previous", "—") or "—"
     forecast = event.get("forecast", "—") or "—"
-    actual   = event.get("actual", "—") or "Pending..."
+    actual   = event.get("actual", "—") or "—"
     currency = event.get("country", "").upper()
     title    = event.get("title", "")
 
-    # Determine beat/miss/inline
-    assessment = "📋 Result posted — check charts for reaction."
+    verdict = "📊"
+    tag = "—"
     try:
         a = float(actual.replace("%","").replace("K","000").replace("M","000000").strip())
-        f = float(forecast.replace("%","").replace("K","000").replace("M","000000").strip())
-        if a > f:
-            assessment = "✅ BEAT FORECAST — Bullish for " + currency
-        elif a < f:
-            assessment = "❌ MISSED FORECAST — Bearish for " + currency
+        f_val = float(forecast.replace("%","").replace("K","000").replace("M","000000").strip())
+        if a > f_val:
+            verdict = "✅"
+            tag = "BEAT"
+        elif a < f_val:
+            verdict = "❌"
+            tag = "MISS"
         else:
-            assessment = "➡️ IN LINE WITH FORECAST — Muted reaction expected"
+            verdict = "➡️"
+            tag = "IN LINE"
     except:
         pass
 
     return (
-        f"📋 <b>JOHLES CAPITAL · EVENT RESULT</b>\n"
-        f"{'─' * 32}\n"
-        f"<b>{currency} — {title}</b>\n"
-        f"🕐 {time_str}\n\n"
-        f"📌 Pairs: <code>{pairs}</code>\n"
-        f"🎯 Forecast: {forecast}\n"
-        f"📊 Previous: {prev}\n"
-        f"✅ <b>Actual: {actual}</b>\n\n"
-        f"{'─' * 32}\n"
-        f"{assessment}\n"
-        f"{'─' * 32}\n"
+        f"{verdict} <b>▌{currency}  {time_str}  {tag}</b>\n"
+        f"{title}\n"
+        f"<code>{pairs}</code>\n"
+        f"A <code>{actual}</code>  F <code>{forecast}</code>  P <code>{prev}</code>"
+    )
+
+
+
+
+# ══════════════════════════════════════════════════════════════════════════════
+# COMMAND HANDLER — responds to /week, /today, /next, /help
+# ══════════════════════════════════════════════════════════════════════════════
+
+def get_updates(offset: int = 0) -> list:
+    """Poll Telegram for new messages/commands."""
+    try:
+        r = requests.get(
+            f"https://api.telegram.org/bot{BOT_TOKEN}/getUpdates",
+            params={"offset": offset, "timeout": 5},
+            timeout=10
+        )
+        if r.status_code == 200:
+            return r.json().get("result", [])
+    except:
+        pass
+    return []
+
+
+def fmt_week_view(events: list) -> str:
+    """Format full week high-impact calendar — like ForexFactory red folder view."""
+    filtered = filter_events(events)
+    if not filtered:
+        return (
+            "📅 <b>JOHLES CAPITAL · WEEKLY CALENDAR</b>
+"
+            "─────────────────────────────────
+"
+            "✅ No high-impact events this week.
+"
+            "<i>JOHLES Capital Intelligence</i>"
+        )
+
+    # Group by day
+    days = {}
+    for e in filtered:
+        t = parse_event_time(e)
+        if t:
+            day = t.strftime("%A %d %B")
+        else:
+            day = e.get("date", "Unknown")
+        if day not in days:
+            days[day] = []
+        days[day].append(e)
+
+    msg = (
+        "📅 <b>JOHLES CAPITAL · WEEKLY HIGH-IMPACT CALENDAR</b>
+"
+        "─────────────────────────────────
+
+"
+    )
+
+    for day, day_events in days.items():
+        msg += f"<b>🗓 {day}</b>
+"
+        for e in day_events:
+            t = parse_event_time(e)
+            time_str = t.strftime("%H:%M UTC") if t else "TBC"
+            currency = e.get("country", "").upper()
+            title = e.get("title", "")
+            forecast = e.get("forecast", "—") or "—"
+            prev = e.get("previous", "—") or "—"
+            pairs = " · ".join(get_pairs_for_event(e))
+            msg += (
+                f"  🔴 <b>{time_str}</b> {currency} — <b>{title}</b>
+"
+                f"       <code>{pairs}</code>
+"
+                f"       Forecast: <b>{forecast}</b>  |  Prev: {prev}
+"
+            )
+        msg += "
+"
+
+    msg += "─────────────────────────────────
+"
+    msg += f"<b>{len(filtered)} high-impact events this week</b>
+"
+    msg += "<i>JOHLES Capital Intelligence</i>"
+    return msg
+
+
+def fmt_today_view(events: list) -> str:
+    """Format today's high-impact events."""
+    today = datetime.utcnow().date()
+    filtered = [e for e in filter_events(events) if parse_event_time(e) and parse_event_time(e).date() == today]
+
+    if not filtered:
+        return (
+            f"📅 <b>TODAY — {today.strftime('%A %d %B %Y')}</b>
+"
+            "─────────────────────────────────
+"
+            "✅ No high-impact events today.
+"
+            "Clear to trade your setups.
+"
+            "<i>JOHLES Capital Intelligence</i>"
+        )
+
+    msg = (
+        f"📅 <b>TODAY — {today.strftime('%A %d %B %Y').upper()}</b>
+"
+        "─────────────────────────────────
+
+"
+    )
+
+    for e in filtered:
+        t = parse_event_time(e)
+        time_str = t.strftime("%H:%M UTC") if t else "TBC"
+        currency = e.get("country", "").upper()
+        title = e.get("title", "")
+        forecast = e.get("forecast", "—") or "—"
+        prev = e.get("previous", "—") or "—"
+        pairs = " · ".join(get_pairs_for_event(e))
+        now = datetime.utcnow()
+        if t:
+            diff = (t - now).total_seconds() / 60
+            if diff > 0:
+                status = f"in {int(diff)}min"
+            else:
+                status = "passed"
+        else:
+            status = ""
+
+        msg += (
+            f"🔴 <b>{time_str}</b> {f'({status})' if status else ''}
+"
+            f"<b>{currency} — {title}</b>
+"
+            f"Pairs: <code>{pairs}</code>
+"
+            f"Forecast: <b>{forecast}</b>  |  Previous: {prev}
+"
+            f"Impact: {impact_bar(e.get('impact',''))}
+
+"
+        )
+
+    msg += "─────────────────────────────────
+"
+    msg += "<i>JOHLES Capital Intelligence</i>"
+    return msg
+
+
+def fmt_next_event(events: list) -> str:
+    """Show the very next upcoming high-impact event."""
+    now = datetime.utcnow()
+    upcoming = []
+    for e in filter_events(events):
+        t = parse_event_time(e)
+        if t and t > now:
+            upcoming.append((t, e))
+    upcoming.sort(key=lambda x: x[0])
+
+    if not upcoming:
+        return (
+            "⏭ <b>NEXT HIGH-IMPACT EVENT</b>
+"
+            "─────────────────────────────────
+"
+            "No upcoming events found this week.
+"
+            "<i>JOHLES Capital Intelligence</i>"
+        )
+
+    t, e = upcoming[0]
+    diff = (t - now).total_seconds() / 60
+    hours = int(diff // 60)
+    mins = int(diff % 60)
+    time_left = f"{hours}h {mins}min" if hours > 0 else f"{mins} minutes"
+    currency = e.get("country", "").upper()
+    title = e.get("title", "")
+    forecast = e.get("forecast", "—") or "—"
+    prev = e.get("previous", "—") or "—"
+    pairs = " · ".join(get_pairs_for_event(e))
+
+    return (
+        f"⏭ <b>NEXT HIGH-IMPACT EVENT</b>
+"
+        f"─────────────────────────────────
+"
+        f"🔴 <b>{currency} — {title}</b>
+"
+        f"🕐 <b>{t.strftime('%H:%M UTC')} · {t.strftime('%A %d %B')}</b>
+"
+        f"⏱ <b>{time_left} away</b>
+
+"
+        f"Pairs: <code>{pairs}</code>
+"
+        f"Forecast: <b>{forecast}</b>  |  Previous: {prev}
+"
+        f"Impact: {impact_bar(e.get('impact',''))}
+"
+        f"─────────────────────────────────
+"
         f"<i>JOHLES Capital Intelligence</i>"
     )
+
+
+def fmt_help() -> str:
+    return (
+        "🤖 <b>JOHLES CAPITAL INTELLIGENCE</b>
+"
+        "─────────────────────────────────
+"
+        "<b>Available commands:</b>
+
+"
+        "/week — Full week high-impact calendar
+"
+        "/today — Today's events only
+"
+        "/next — Next upcoming event
+"
+        "/help — Show this menu
+
+"
+        "─────────────────────────────────
+"
+        "<b>Automatic alerts:</b>
+"
+        "• Session briefing at market open
+"
+        "• 30-min warning before events
+"
+        "• 10-min warning before events
+"
+        "• Result summary after events
+"
+        "─────────────────────────────────
+"
+        "<i>Monitoring: EURUSD · GBPUSD · USDJPY
+"
+        "AUDUSD · USDCAD · NZDUSD · USDCHF · XAUUSD</i>"
+    )
+
+
+def handle_commands(calendar_cache: list, last_update_id: list):
+    """Check for and handle incoming commands."""
+    updates = get_updates(last_update_id[0] + 1)
+    for update in updates:
+        last_update_id[0] = update.get("update_id", last_update_id[0])
+        msg = update.get("message", {})
+        text = msg.get("text", "").strip().lower()
+        chat_id = str(msg.get("chat", {}).get("id", ""))
+
+        # Only respond to our chat
+        if chat_id != CHAT_ID:
+            continue
+
+        if text in ["/week", "/week@johlescapitalbot"]:
+            send_message(fmt_week_view(calendar_cache))
+            log.info("Sent /week response")
+        elif text in ["/today", "/today@johlescapitalbot"]:
+            send_message(fmt_today_view(calendar_cache))
+            log.info("Sent /today response")
+        elif text in ["/next", "/next@johlescapitalbot"]:
+            send_message(fmt_next_event(calendar_cache))
+            log.info("Sent /next response")
+        elif text in ["/help", "/start", "/help@johlescapitalbot"]:
+            send_message(fmt_help())
+            log.info("Sent /help response")
 
 
 # ══════════════════════════════════════════════════════════════════════════════
@@ -309,6 +556,8 @@ def make_event_key(event: dict) -> str:
 
 def main():
     log.info("═══ JOHLES Capital Intelligence Bot starting ═══")
+
+    last_update_id = [0]  # track last processed update
 
     # Send startup message
     send_message(
@@ -387,6 +636,9 @@ def main():
                         if send_message(fmt_result(event)):
                             sent_alerts.add(alert_key)
                             log.info(f"Result sent: {event.get('title')}")
+
+            # Handle incoming commands (/week, /today, /next, /help)
+            handle_commands(calendar_cache, last_update_id)
 
             # Check every 60 seconds
             time.sleep(60)
