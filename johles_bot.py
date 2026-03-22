@@ -226,35 +226,50 @@ def fmt_result(event):
 def fmt_week_view(events):
     filtered = filter_events(events)
     if not filtered:
-        return "\U0001f4c5 <b>WEEK</b>  \u2705 No high-impact events this week."
+        return (
+            "\U0001f4c5 <b>THIS WEEK</b>\n\n"
+            "\u2705 No high-impact news events this week.\n"
+            "<i>Safe to trade without news risk.</i>"
+        )
 
     # Group by date
     days = {}
     for e in filtered:
-        t   = parse_event_time(e)
-        d   = parse_event_date(e)
-        if d:
-            day_key = d.strftime("%a %d %b").upper()
-        else:
-            day_key = "DATE TBC"
-        days.setdefault(day_key, []).append((t, e))
+        d = parse_event_date(e)
+        day_key = d.strftime("%A %d %B").upper() if d else "DATE NOT YET CONFIRMED"
+        days.setdefault(day_key, []).append(e)
 
-    msg = f"\U0001f4c5 <b>THIS WEEK \u2014 {len(filtered)} HIGH-IMPACT EVENTS</b>\n"
-    msg += "\u2500" * 28 + "\n\n"
+    msg  = "\U0001f4c5 <b>THIS WEEK \u2014 HIGH-IMPACT NEWS</b>\n"
+    msg += "<i>These are the big news events that can move the market sharply.</i>\n"
+    msg += "\u2500" * 30 + "\n\n"
 
-    for day, items in days.items():
-        msg += f"\U0001f4cc <b>{day}</b>\n"
-        for t, e in items:
-            ts       = t.strftime("%H:%M UTC") if t else "time TBC"
+    for day, day_events in days.items():
+        msg += f"<b>\U0001f4cc {day}</b>\n"
+        for e in day_events:
+            t        = parse_event_time(e)
             currency = e.get("country", "").upper()
             title    = e.get("title", "")
-            forecast = e.get("forecast", "\u2014") or "\u2014"
+            forecast = e.get("forecast", "not yet available") or "not yet available"
             prev     = e.get("previous", "\u2014") or "\u2014"
-            msg += f"  \U0001f534 {ts}  <b>{currency}</b> \u2014 {title}\n"
-            msg += f"       Forecast <code>{forecast}</code>   Prev <code>{prev}</code>\n"
+
+            # Time label
+            if t:
+                ts = t.strftime("%H:%M UTC")
+            else:
+                ts = "exact time not yet released"
+
+            # What currency/pairs are affected
+            pairs = get_pairs_for_event(e)
+            pairs_str = "  ".join(pairs) if pairs else currency
+
+            msg += f"\n  \U0001f534 <b>{title}</b>\n"
+            msg += f"  \U0001f552 {ts}\n"
+            msg += f"  \U0001f4b1 Affects: <code>{pairs_str}</code>\n"
+            msg += f"  Expected: <code>{forecast}</code>   Last time: <code>{prev}</code>\n"
         msg += "\n"
 
-    msg += "<i>Source: ForexFactory \u00b7 High-impact only</i>"
+    msg += "\u2500" * 30 + "\n"
+    msg += "<i>\u26a0\ufe0f Avoid trading 5 minutes before and after these events.\nPrices can spike sharply in either direction.</i>"
     return msg.rstrip()
 
 
